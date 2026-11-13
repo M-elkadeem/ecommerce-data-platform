@@ -5,7 +5,15 @@ keys/
 # Environments
 venv/
 
-# Generated files
+# Python generated
 __pycache__/
+.pytest_cache/
+
+# dbt generated
 target/
 logs/
+dbt_packages/
+
+# Windows / Editor
+Thumbs.db
+.vscode/

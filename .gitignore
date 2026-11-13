@@ -1,0 +1,11 @@
+# Secrets
+.env
+keys/
+
+# Environments
+venv/
+
+# Generated files
+__pycache__/
+target/
+logs/

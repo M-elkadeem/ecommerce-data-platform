@@ -16,7 +16,7 @@ from ingestion.config import DATA_DIR, DATA_END_DATE, DATA_START_DATE, LOG_LEVEL
 from ingestion.utils import date_range, parse_date, setup_logging
 
 logger = logging.getLogger(__name__)
-
+## where we will store the csv files itself
 OUTPUT_FILE = DATA_DIR / "marketing_spend.csv"
 CURRENCY = "EUR"
 COLUMNS = ["date", "channel", "campaign", "currency", "spend", "impressions", "clicks"]

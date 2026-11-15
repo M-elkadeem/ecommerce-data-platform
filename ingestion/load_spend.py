@@ -7,17 +7,16 @@ partitions (days) it loads. Re-running for the same dates never creates duplicat
 import argparse
 import csv
 import logging
-from collections import defaultdict
-from datetime import date, datetime, timezone
+from datetime import date
 from pathlib import Path
 
 from google.cloud import bigquery
 
+from ingestion.bq_loader import check_table, ensure_table, group_by_date, load_partitions
 from ingestion.config import (
     DATA_END_DATE,
     DATA_START_DATE,
     LOG_LEVEL,
-    MAX_BYTES_BILLED,
     PROJECT_ID,
     RAW_DATASET,
     SPEND_TABLE,
@@ -62,68 +61,6 @@ def read_csv_rows(path: Path, start: date, end: date) -> list[dict]:
     return rows
 
 
-def group_by_date(rows: list[dict]) -> dict[str, list[dict]]:
-    """Split the rows into one list per day: {"2020-11-01": [6 rows], ...}."""
-    groups = defaultdict(list)
-    for r in rows:
-        groups[r["date"]].append(r)
-    return dict(groups)
-
-
-def ensure_table(client: bigquery.Client) -> None:
-    """Create the table (partitioned by date) if it doesn't exist yet."""
-    table = bigquery.Table(TABLE_ID, schema=SCHEMA)
-    table.time_partitioning = bigquery.TimePartitioning(field="date")  # one partition per day
-    client.create_table(table, exists_ok=True)
-
-
-def load_partitions(client: bigquery.Client, rows_by_date: dict[str, list[dict]]) -> None:
-    """Replace each day's partition with that day's rows (WRITE_TRUNCATE = replace)."""
-    loaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S.%f")
-    jobs = []
-    for day, rows in sorted(rows_by_date.items()):
-        partition_id = f"{TABLE_ID}${day.replace('-', '')}"     # e.g. ...marketing_spend$20201101
-        job_config = bigquery.LoadJobConfig(
-            schema=SCHEMA,
-            write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        )
-        rows_to_load = [{**r, "_loaded_at": loaded_at} for r in rows]
-        job = client.load_table_from_json(rows_to_load, partition_id, job_config=job_config)
-        jobs.append((day, job))                                  # started, not finished yet
-
-    for day, job in jobs:
-        job.result()                                             # wait; raises an error if the load failed
-        logger.debug(f"Partition {day}: {job.output_rows} rows")
-    logger.info(f"Replaced {len(jobs)} partition(s) in {TABLE_ID}")
-
-
-def check_table(client: bigquery.Client, start: date, end: date) -> None:
-    """Count rows and duplicates in BigQuery for the loaded dates, and log the result."""
-    sql = f"""
-        SELECT
-            COUNT(*) AS row_count,
-            COUNT(DISTINCT date) AS day_count,
-            COUNT(*) - COUNT(DISTINCT CONCAT(CAST(date AS STRING), '|', campaign)) AS duplicates,
-            SUM(spend) AS total_spend
-        FROM `{TABLE_ID}`
-        WHERE date BETWEEN @start AND @end
-    """
-    job_config = bigquery.QueryJobConfig(
-        maximum_bytes_billed=MAX_BYTES_BILLED,
-        query_parameters=[
-            bigquery.ScalarQueryParameter("start", "DATE", start),
-            bigquery.ScalarQueryParameter("end", "DATE", end),
-        ],
-    )
-    row = list(client.query(sql, job_config=job_config).result())[0]
-    logger.info(
-        f"Check {start} to {end}: rows={row['row_count']}, days={row['day_count']}, "
-        f"duplicates={row['duplicates']}, total spend={row['total_spend']:,.2f}"
-    )
-    if row["duplicates"] > 0:
-        raise RuntimeError(f"Found {row['duplicates']} duplicate rows in {TABLE_ID}")
-
-
 def parse_args() -> argparse.Namespace:
     """Read --start-date / --end-date from the command line (defaults: full GA4 period)."""
     parser = argparse.ArgumentParser(description="Load marketing spend CSV into BigQuery.")
@@ -148,9 +85,9 @@ def main() -> None:
         logger.warning(f"{len(missing)} day(s) have no rows in the CSV and were not loaded, e.g. {missing[0]}")
 
     client = bigquery.Client(project=PROJECT_ID)
-    ensure_table(client)
-    load_partitions(client, rows_by_date)
-    check_table(client, start, end)
+    ensure_table(client, TABLE_ID, SCHEMA)
+    load_partitions(client, TABLE_ID, SCHEMA, rows_by_date)
+    check_table(client, TABLE_ID, start, end, key_columns=["date", "campaign"], sum_column="spend")
 
 
 if __name__ == "__main__":

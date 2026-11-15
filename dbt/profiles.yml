@@ -1,0 +1,30 @@
+ecommerce:                 # must match "profile:" in dbt_project.yml
+  target: dev              # which output to use by default
+  outputs:
+
+    dev:                   # your laptop → the real datasets
+      type: bigquery
+      method: service-account
+      # Same key as Python. Uses the env var if set (CI), else the local git-ignored key
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', '../keys/pipeline-sa.json') }}"
+      project: ecom-data-platform
+      dataset: staging     # default dataset (models override it with +schema)
+      location: US         # same as GA4 and your raw datasets
+      threads: 4           # how many models dbt builds at the same time
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      maximum_bytes_billed: 5000000000   # 5 GB hard cap per query
+
+    ci:                    # GitHub Actions (Phase 6) → everything into the "ci" dataset
+      type: bigquery
+      method: service-account
+      keyfile: "{{ env_var('GOOGLE_APPLICATION_CREDENTIALS', '../keys/pipeline-sa.json') }}"
+      project: ecom-data-platform
+      dataset: ci
+      location: US
+      threads: 4
+      priority: interactive
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      maximum_bytes_billed: 5000000000

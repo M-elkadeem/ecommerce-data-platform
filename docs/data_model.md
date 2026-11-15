@@ -8,12 +8,13 @@ ready-made table for the dashboard.
 
 ## Overview
 
+```
                     dim_customers
                           |
     dim_channels ---- fct_orders            fct_events (incremental)
           |
           +---- mart_channel_performance  <- Looker Studio dashboard
-
+```
 ## Tables
 
 ### fct_events

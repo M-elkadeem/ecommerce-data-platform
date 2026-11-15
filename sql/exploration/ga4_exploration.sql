@@ -24,7 +24,6 @@ SELECT
 FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_20210131`
 LIMIT 20;
 
-
 -- Q4: count sessions = distinct (user + session id) pairs
 WITH events AS (
   SELECT

@@ -4,7 +4,7 @@ PROJECT_ID = "ecom-data-platform"
 MAX_BYTES = 100 * 1024 * 1024  # 100 MB safety cap
 
 client = bigquery.Client(project=PROJECT_ID)
-
+## next is sql command for testing
 sql = """
     SELECT COUNT(*) AS purchase_count
     FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_20210131`

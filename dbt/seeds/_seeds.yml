@@ -1,0 +1,22 @@
+version: 2
+
+seeds:
+  - name: channel_mapping
+    description: >
+      Lookup table: maps a GA4 traffic medium to a marketing channel.
+      Several mediums can map to one channel. channel_id matches the
+      channel values in the marketing spend data.
+    columns:
+      - name: medium
+        description: GA4 traffic medium, lowercase (the join key).
+        data_tests:
+          - unique        # one medium must never map to two channels
+          - not_null
+      - name: channel_id
+        description: Stable channel code (same values as stg_marketing__spend.channel).
+        data_tests:
+          - not_null
+      - name: channel_name
+        description: Readable channel name for dashboards.
+      - name: is_paid
+        description: True if we spend money on this channel.

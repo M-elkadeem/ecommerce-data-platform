@@ -19,7 +19,23 @@ models:
     staging:
       +schema: staging        # build into the BigQuery dataset "staging"
       +materialized: view     # staging = views by default (cheap, always fresh)
-# intermediate + marts get added in Phase 3
+    intermediate:
+      +schema: intermediate   # helper models with business logic
+      +materialized: view     # default = view; heavy models switch to table in their own config
+    marts:
+      +schema: marts          # final star schema + summary mart
+      +materialized: table    # read often by dashboards → store the result
+
+# Seeds = small CSV lookup files loaded with `dbt seed`
+seeds:
+  ecommerce_data_platform:
+    +schema: staging          # lookup tables live next to the staging models
+    channel_mapping:
+      +column_types:          # set types ourselves instead of letting dbt guess
+        medium: string
+        channel_id: string
+        channel_name: string
+        is_paid: boolean
 
 # Project variables: change the range here, not in the SQL
 vars:

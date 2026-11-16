@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: int_sessions
+    description: >
+      One row per GA4 session. Each session gets one channel using a
+      session-level rule: the source/medium of the first event in the session
+      that has one, mapped through the channel_mapping seed. Unmapped or
+      missing mediums get channel_id = 'unknown'.
+    columns:
+      - name: session_key
+        description: Session ID = user_pseudo_id + ga_session_id (the grain).
+        data_tests:
+          - unique        # proves the grain: one row = one session
+          - not_null
+      - name: session_date
+        description: Date of the first event in the session.
+        data_tests:
+          - not_null
+      - name: user_pseudo_id
+        description: GA4 anonymous user ID.
+        data_tests:
+          - not_null
+      - name: channel_id
+        description: Channel code from channel_mapping, or 'unknown'.
+        data_tests:
+          - not_null
+      - name: is_paid
+        description: True if the session came from a channel we spend money on.
+      - name: has_purchase
+        description: True if the session contains at least one purchase event.

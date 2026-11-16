@@ -6,6 +6,11 @@ sources:
     description: Data loaded into BigQuery by the Python ingestion jobs.
     database: ecom-data-platform                          # GCP project
     schema: "{{ env_var('RAW_DATASET', 'raw') }}"         # dataset; same env var as Python (CI can use 'ci')
+    config:
+      loaded_at_field: _loaded_at                         # load time written by the Python loaders
+      freshness:                                          # checked by `dbt source freshness`
+        warn_after: {count: 24, period: hour}             # daily pipeline: older than 1 day → warn
+        error_after: {count: 72, period: hour}            # older than 3 days → error
     tables:
       - name: marketing_spend
         description: Simulated daily ad spend, one row per campaign per day (EUR). Partitioned by date.
@@ -13,6 +18,7 @@ sources:
         description: Daily EUR→USD rates from the Frankfurter API (ECB). Working days only.
 
   # --- Google's public GA4 sample (already in BigQuery) ---
+  # No freshness: a finished public sample (Nov 2020 – Jan 2021), never updated
   - name: ga4
     description: GA4 obfuscated sample of the Google Merchandise Store (Nov 2020 – Jan 2021).
     database: bigquery-public-data

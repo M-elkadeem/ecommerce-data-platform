@@ -113,3 +113,56 @@ models:
                 field: channel_id
       - name: is_customer
         description: True if the user placed at least one order.
+
+  - name: mart_channel_performance
+    description: >
+      Summary mart for the dashboard: one row per channel per day with
+      sessions, orders, revenue, spend (USD) and the ratios conversion_rate
+      (orders / sessions), roas (revenue / spend) and cost_per_order
+      (spend / orders). Built on a full date × channel grid; each source is
+      aggregated to channel × day before joining (no fan-out).
+      Ratios must be recomputed from the sums for longer periods, never averaged.
+      Known limitations: spend is simulated; revenue is only reliable from
+      2020-11-11 to ~2021-01-25 (GA4 order IDs missing before, collapsing after);
+      Paid Social and Display have spend but no tracked sessions; Referral is
+      inflated by self-referrals from the shop's own domain.
+    columns:
+      - name: channel_day_key
+        description: report_date + channel_id (the grain).
+        data_tests:
+          - unique
+          - not_null
+      - name: report_date
+        description: Day.
+        data_tests:
+          - not_null
+      - name: channel_id
+        description: Channel (joins to dim_channels).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channels')
+                field: channel_id
+      - name: sessions
+        description: Sessions attributed to the channel (session-level rule).
+        data_tests:
+          - not_null
+      - name: orders
+        description: Orders from sessions of this channel.
+        data_tests:
+          - not_null
+      - name: revenue_usd
+        description: Revenue of those orders in USD.
+        data_tests:
+          - not_null
+      - name: spend_usd
+        description: Marketing spend in USD (simulated, converted from EUR).
+        data_tests:
+          - not_null
+      - name: conversion_rate
+        description: orders / sessions (NULL when sessions = 0).
+      - name: roas
+        description: revenue_usd / spend_usd (NULL when spend = 0, i.e. unpaid channels).
+      - name: cost_per_order
+        description: spend_usd / orders (NULL when orders = 0).

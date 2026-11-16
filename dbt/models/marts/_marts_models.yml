@@ -1,0 +1,37 @@
+version: 2
+
+models:
+  - name: fct_events
+    description: >
+      Fact table, one row per GA4 event, with the channel of the event's
+      session. Incremental (insert_overwrite by event_date): each run
+      re-processes the last 3 days and overwrites those partitions.
+      Run with --full-refresh after changing its logic or the channel mapping.
+    columns:
+      - name: event_id
+        description: Surrogate key from staging (the grain).
+        data_tests:
+          - unique        # proves incremental runs never duplicate events
+          - not_null
+      - name: event_date
+        description: Day of the event (partition column).
+        data_tests:
+          - not_null
+      - name: event_name
+        description: GA4 event type (page_view, purchase, ...).
+        data_tests:
+          - not_null
+      - name: user_pseudo_id
+        description: GA4 anonymous user ID.
+        data_tests:
+          - not_null
+      - name: session_key
+        description: Session the event belongs to (joins to int_sessions).
+      - name: channel_id
+        description: Channel of the event's session (joins to dim_channels), or 'unknown'.
+        data_tests:
+          - not_null
+      - name: transaction_id
+        description: Order ID on purchase events, otherwise NULL.
+      - name: purchase_revenue_usd
+        description: Revenue in USD on purchase events.

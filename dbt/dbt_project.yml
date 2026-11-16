@@ -20,3 +20,8 @@ models:
       +schema: staging        # build into the BigQuery dataset "staging"
       +materialized: view     # staging = views by default (cheap, always fresh)
 # intermediate + marts get added in Phase 3
+
+# Project variables: change the range here, not in the SQL
+vars:
+  ga4_start_date: "20201101"
+  ga4_end_date: "20210131"

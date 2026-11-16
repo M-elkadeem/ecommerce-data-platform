@@ -1,0 +1,27 @@
+# The dbt project's name and which connection (profile) it uses
+name: ecommerce_data_platform
+version: "1.0.0"
+profile: ecommerce
+
+# Where dbt looks for each kind of file
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+
+# Compiled SQL and logs go here (git-ignored); `dbt clean` deletes them
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+# Default settings per folder (layer)
+models:
+  ecommerce_data_platform:
+    staging:
+      +schema: staging        # build into the BigQuery dataset "staging"
+      +materialized: view     # staging = views by default (cheap, always fresh)
+# intermediate + marts get added in Phase 3
+
+# Project variables: change the range here, not in the SQL
+vars:
+  ga4_start_date: "20201101"
+  ga4_end_date: "20210131"

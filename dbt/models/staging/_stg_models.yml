@@ -1,0 +1,65 @@
+version: 2
+
+models:
+
+  - name: stg_marketing__spend
+    description: Marketing spend, one row per campaign per day. Amounts in EUR (simulated data).
+    columns:
+      - name: spend_date
+        description: Day the money was spent.
+        data_tests: [not_null]
+      - name: channel
+        description: Marketing channel (lower-case).
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['paid_search', 'paid_social', 'display', 'email']
+      - name: campaign
+        description: Campaign name (lower-case).
+        data_tests: [not_null]
+      - name: currency
+        description: Currency of spend_amount.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['EUR']
+      - name: spend_amount
+        description: Spend in EUR.
+        data_tests: [not_null]
+
+  - name: stg_frankfurter__exchange_rates
+    description: Daily EUR→USD rates (ECB via Frankfurter). Working days only; weekend gaps kept.
+    columns:
+      - name: rate_date
+        description: Day of the rate (one row per working day).
+        data_tests: [unique, not_null]
+      - name: exchange_rate
+        description: How many USD one EUR buys on rate_date.
+        data_tests: [not_null]
+
+  - name: stg_ga4__events
+    description: GA4 events (Google Merchandise Store sample), one row per event, event params flattened.
+    columns:
+      - name: event_id
+        description: Surrogate key built by hashing the fields that identify an event.
+        data_tests: [unique, not_null]
+      - name: event_date
+        description: Day of the event (partition column).
+        data_tests: [not_null]
+      - name: event_name
+        description: GA4 event type, e.g. page_view, session_start, purchase.
+        data_tests: [not_null]
+      - name: user_pseudo_id
+        description: Anonymous browser/device ID.
+        data_tests: [not_null]
+      - name: session_key
+        description: user_pseudo_id + ga_session_id. Null when the event has no session ID.
+      - name: event_source
+        description: Traffic source of this visit (event_params). Used for channels in Phase 3.
+      - name: first_user_source
+        description: Source of the user's very first visit (traffic_source struct).
+      - name: transaction_id
+        description: Order ID on purchase events; '(not set)' turned into NULL.
+      - name: purchase_revenue_usd
+        description: Order revenue in USD on purchase events.

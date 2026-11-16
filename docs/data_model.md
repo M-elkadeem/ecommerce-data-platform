@@ -53,9 +53,20 @@ ready-made table for the dashboard.
 - **Formulas:** conversion_rate = orders / sessions; roas = revenue / spend
 
 ## Sources
-- GA4 public sample (web events): bigquery-public-data.ga4_obfuscated_sample_ecommerce
-- Marketing spend (simulated CSV, loaded by Python into `raw`)
-- Exchange rates (Frankfurter API, loaded by Python into `raw`)
+| Source (dbt) | BigQuery table | Grain | Loaded by |
+|---|---|---|---|
+| `ga4.events` | `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*` | one GA4 event | Google (public sample) |
+| `raw.marketing_spend` | `ecom-data-platform.raw.marketing_spend` | one campaign per day (EUR, simulated) | `ingestion/load_spend.py` |
+| `raw.exchange_rates` | `ecom-data-platform.raw.exchange_rates` | one working day (EUR→USD, ECB via Frankfurter) | `ingestion/load_exchange_rates.py` |
+
+Raw tables are partitioned by `date` and carry `_loaded_at` (load time, used for freshness checks).
+
+## Staging (dbt, views/tables in `staging`)
+One model per source table: rename, cast, standardize. No joins or business logic.
+- `stg_marketing__spend` – one row per campaign per day; spend in EUR
+- `stg_frankfurter__exchange_rates` – one row per working day; weekend gaps kept
+- `stg_ga4__events` – one row per event; event params unnested (Round C)
+
 
 ## Known limitations
 - GA4 sample: order IDs missing 1–10 Nov 2020; revenue degrades from ~26 Jan 2021.

@@ -97,3 +97,19 @@ periods, recompute ratios from the summed parts – never average daily ratios.
 - **`<Other>` / `(data deleted)`** are values obfuscated by Google in the
   public sample → channel `other`.
 - **`user_pseudo_id` is a browser/device, not a person.**
+
+## Data quality
+Tests run with `dbt build` / `dbt test`; a failing error-level test skips everything downstream.
+- **Sources:** freshness on `_loaded_at` for `raw.marketing_spend` and `raw.exchange_rates`
+  (`dbt source freshness`: warn after 24 h, error after 72 h). GA4 has none (finished public sample).
+- **Every model:** grain tests (`unique` / `dbt_utils.unique_combination_of_columns`) and `not_null` on keys.
+- **Keys:** `relationships` from every fact (and `dim_customers`, the mart) to its dimensions.
+- **Values:** `accepted_values` (channels, currency) and `dbt_utils.accepted_range`
+  (money ≥ 0, EUR→USD rate between 0.5 and 2).
+- **Business rules (singular tests in `dbt/tests/`):**
+  - `assert_mart_reconciles_with_sources` – mart totals = source totals (error)
+  - `assert_fct_events_matches_staging` – same rows per day as staging; guards the incremental model (error)
+  - `assert_no_empty_order_days_in_reliable_range` – every day in the reliable range has orders (warn)
+  - `assert_unknown_session_share_below_30pct` – unknown traffic stays below 30% (warn)
+- **Severity:** errors stop the pipeline (duplicates, broken keys, totals that don't match);
+  warnings are only reported (soft signals).

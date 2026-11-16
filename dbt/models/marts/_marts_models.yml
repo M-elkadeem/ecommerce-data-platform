@@ -74,6 +74,10 @@ models:
                 field: channel_id
       - name: revenue_usd
         description: Order revenue in USD.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
 
   - name: dim_channels
     description: >
@@ -126,6 +130,10 @@ models:
       2020-11-11 to ~2021-01-25 (GA4 order IDs missing before, collapsing after);
       Paid Social and Display have spend but no tracked sessions; Referral is
       inflated by self-referrals from the shop's own domain.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:    # grain: one row per channel per day
+          arguments:
+            combination_of_columns: [report_date, channel_id]
     columns:
       - name: channel_day_key
         description: report_date + channel_id (the grain).
@@ -148,21 +156,37 @@ models:
         description: Sessions attributed to the channel (session-level rule).
         data_tests:
           - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
       - name: orders
         description: Orders from sessions of this channel.
         data_tests:
           - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
       - name: revenue_usd
         description: Revenue of those orders in USD.
         data_tests:
           - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
       - name: spend_usd
         description: Marketing spend in USD (simulated, converted from EUR).
         data_tests:
           - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
       - name: conversion_rate
         description: orders / sessions (NULL when sessions = 0).
       - name: roas
         description: revenue_usd / spend_usd (NULL when spend = 0, i.e. unpaid channels).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
       - name: cost_per_order
         description: spend_usd / orders (NULL when orders = 0).

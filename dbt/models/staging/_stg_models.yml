@@ -4,6 +4,10 @@ models:
 
   - name: stg_marketing__spend
     description: Marketing spend, one row per campaign per day. Amounts in EUR (simulated data).
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:    # grain: one row per campaign per day
+          arguments:
+            combination_of_columns: [spend_date, campaign]
     columns:
       - name: spend_date
         description: Day the money was spent.
@@ -26,7 +30,11 @@ models:
                 values: ['EUR']
       - name: spend_amount
         description: Spend in EUR.
-        data_tests: [not_null]
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:               # money can't be negative
+              arguments:
+                min_value: 0
 
   - name: stg_frankfurter__exchange_rates
     description: Daily EUR→USD rates (ECB via Frankfurter). Working days only; weekend gaps kept.
@@ -36,7 +44,12 @@ models:
         data_tests: [unique, not_null]
       - name: exchange_rate
         description: How many USD one EUR buys on rate_date.
-        data_tests: [not_null]
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:               # EUR→USD has stayed roughly 0.8–1.6 for decades
+              arguments:
+                min_value: 0.5
+                max_value: 2
 
   - name: stg_ga4__events
     description: GA4 events (Google Merchandise Store sample), one row per event, event params flattened.

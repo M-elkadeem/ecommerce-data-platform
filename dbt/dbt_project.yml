@@ -41,3 +41,6 @@ seeds:
 vars:
   ga4_start_date: "20201101"
   ga4_end_date: "20210131"
+  # Days where GA4 order data is reliable (IDs missing before, collapsing after) – used by tests
+  reliable_start_date: "2020-11-11"
+  reliable_end_date: "2021-01-25"

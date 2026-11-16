@@ -45,6 +45,10 @@ models:
         description: USD for 1 EUR on this day (published or carried over).
         data_tests:
           - not_null      # the whole point: no day without a rate
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0.5
+                max_value: 2
       - name: rate_is_filled
         description: True if the rate was copied from another day.
         data_tests:
@@ -74,3 +78,6 @@ models:
         description: Spend converted to USD (spend_eur × eur_usd_rate).
         data_tests:
           - not_null      # fails if any day had no rate
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0

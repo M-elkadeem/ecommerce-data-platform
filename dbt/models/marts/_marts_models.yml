@@ -31,7 +31,85 @@ models:
         description: Channel of the event's session (joins to dim_channels), or 'unknown'.
         data_tests:
           - not_null
+          - relationships:              # every channel must exist in dim_channels
+              arguments:
+                to: ref('dim_channels')
+                field: channel_id
       - name: transaction_id
         description: Order ID on purchase events, otherwise NULL.
       - name: purchase_revenue_usd
         description: Revenue in USD on purchase events.
+
+  - name: fct_orders
+    description: >
+      Fact table, one row per order. Only purchases with a real GA4
+      transaction_id; duplicates removed (first event kept). Purchases
+      without an order ID (mainly 1–10 Nov 2020) are excluded, so revenue
+      for those days is understated. Channel = channel of the order's session.
+    columns:
+      - name: transaction_id
+        description: GA4 order ID (the grain).
+        data_tests:
+          - unique
+          - not_null
+      - name: order_date
+        description: Day of the order.
+        data_tests:
+          - not_null
+      - name: user_pseudo_id
+        description: User who ordered (joins to dim_customers).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_customers')
+                field: user_pseudo_id
+      - name: channel_id
+        description: Channel of the order's session (joins to dim_channels).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channels')
+                field: channel_id
+      - name: revenue_usd
+        description: Order revenue in USD.
+
+  - name: dim_channels
+    description: >
+      Dimension, one row per marketing channel, from the channel_mapping
+      seed plus an 'unknown' member for traffic without a channel.
+    columns:
+      - name: channel_id
+        description: Channel code (primary key).
+        data_tests:
+          - unique        # also catches a seed with two names for one channel
+          - not_null
+      - name: channel_name
+        description: Readable channel name.
+        data_tests:
+          - not_null
+      - name: is_paid
+        description: True if we spend money on this channel.
+
+  - name: dim_customers
+    description: >
+      Dimension, one row per GA4 user (user_pseudo_id = browser/device, not a
+      person). Holds first-touch attribution (channel of the user's first-ever
+      visit) and activity totals.
+    columns:
+      - name: user_pseudo_id
+        description: GA4 anonymous user ID (primary key).
+        data_tests:
+          - unique
+          - not_null
+      - name: first_touch_channel_id
+        description: Channel of the user's first-ever visit (joins to dim_channels).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_channels')
+                field: channel_id
+      - name: is_customer
+        description: True if the user placed at least one order.

@@ -1,0 +1,23 @@
+version: 2
+
+sources:
+  # --- Tables loaded by our Python jobs (Phase 1) ---
+  - name: raw
+    description: Data loaded into BigQuery by the Python ingestion jobs.
+    database: ecom-data-platform                          # GCP project
+    schema: "{{ env_var('RAW_DATASET', 'raw') }}"         # dataset; same env var as Python (CI can use 'ci')
+    tables:
+      - name: marketing_spend
+        description: Simulated daily ad spend, one row per campaign per day (EUR). Partitioned by date.
+      - name: exchange_rates
+        description: Daily EUR→USD rates from the Frankfurter API (ECB). Working days only.
+
+  # --- Google's public GA4 sample (already in BigQuery) ---
+  - name: ga4
+    description: GA4 obfuscated sample of the Google Merchandise Store (Nov 2020 – Jan 2021).
+    database: bigquery-public-data
+    schema: ga4_obfuscated_sample_ecommerce
+    tables:
+      - name: events
+        identifier: "events_*"      # date-sharded tables events_YYYYMMDD → wildcard
+        description: One row per GA4 event. Filter with _TABLE_SUFFIX to limit cost.

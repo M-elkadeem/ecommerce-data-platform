@@ -1,0 +1,17 @@
+medium,channel_id,channel_name,is_paid
+cpc,paid_search,Paid Search,true
+ppc,paid_search,Paid Search,true
+paidsearch,paid_search,Paid Search,true
+paid_social,paid_social,Paid Social,true
+paidsocial,paid_social,Paid Social,true
+cpm,display,Display,true
+display,display,Display,true
+banner,display,Display,true
+email,email,Email,true
+organic,organic_search,Organic Search,false
+referral,referral,Referral,false
+(none),direct,Direct,false
+affiliate,affiliates,Affiliates,false
+social,organic_social,Organic Social,false
+<other>,other,Other (obfuscated),false
+(data deleted),other,Other (obfuscated),false

@@ -1,0 +1,76 @@
+version: 2
+
+models:
+  - name: int_sessions
+    description: >
+      One row per GA4 session. Each session gets one channel using a
+      session-level rule: the source/medium of the first event in the session
+      that has one, mapped through the channel_mapping seed. Unmapped or
+      missing mediums get channel_id = 'unknown'.
+    columns:
+      - name: session_key
+        description: Session ID = user_pseudo_id + ga_session_id (the grain).
+        data_tests:
+          - unique        # proves the grain: one row = one session
+          - not_null
+      - name: session_date
+        description: Date of the first event in the session.
+        data_tests:
+          - not_null
+      - name: user_pseudo_id
+        description: GA4 anonymous user ID.
+        data_tests:
+          - not_null
+      - name: channel_id
+        description: Channel code from channel_mapping, or 'unknown'.
+        data_tests:
+          - not_null
+      - name: is_paid
+        description: True if the session came from a channel we spend money on.
+      - name: has_purchase
+        description: True if the session contains at least one purchase event.
+
+  - name: int_exchange_rates__filled
+    description: >
+      One row per calendar day with an EUR→USD rate. Built on a date spine;
+      days without a published ECB rate (weekends, holidays) use the last
+      known rate. The first day of the range uses the next known rate.
+    columns:
+      - name: rate_date
+        description: Calendar day (the grain).
+        data_tests:
+          - unique
+          - not_null
+      - name: exchange_rate
+        description: USD for 1 EUR on this day (published or carried over).
+        data_tests:
+          - not_null      # the whole point: no day without a rate
+      - name: rate_is_filled
+        description: True if the rate was copied from another day.
+        data_tests:
+          - not_null
+
+  - name: int_spend__usd
+    description: >
+      Marketing spend, one row per campaign per day, converted from EUR to
+      USD with that day's gap-filled exchange rate. Spend is simulated.
+    columns:
+      - name: spend_key
+        description: spend_date + campaign (the grain).
+        data_tests:
+          - unique
+          - not_null
+      - name: channel_id
+        description: Channel code (matches channel_mapping.channel_id).
+        data_tests:
+          - not_null
+      - name: spend_eur
+        description: Spend in EUR (original currency).
+        data_tests:
+          - not_null
+      - name: eur_usd_rate
+        description: EUR→USD rate used for the conversion.
+      - name: spend_usd
+        description: Spend converted to USD (spend_eur × eur_usd_rate).
+        data_tests:
+          - not_null      # fails if any day had no rate

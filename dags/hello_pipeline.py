@@ -1,7 +1,9 @@
 """Round 2 test DAG: proves Airflow can run our tools inside the container."""
 
 import pendulum
+# noinspection PyUnresolvedReferences
 from airflow.providers.standard.operators.bash import BashOperator
+# noinspection PyUnresolvedReferences
 from airflow.sdk import DAG
 
 with DAG(

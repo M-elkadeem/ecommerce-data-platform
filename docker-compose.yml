@@ -1,0 +1,46 @@
+# Local Airflow = 2 containers:
+#   postgres -> Airflow's memory (DAG runs, task states)
+#   airflow  -> all Airflow parts in one container, started from OUR image
+
+services:
+
+  postgres:
+    image: postgres:16                     # pinned version
+    environment:
+      POSTGRES_USER: airflow               # local-only login (fine on a laptop, never in production)
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db:/var/lib/postgresql/data   # named volume -> history survives restarts
+    healthcheck:                           # "ready" only when Postgres accepts connections
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  airflow:
+    build: .                               # build from our Dockerfile ...
+    image: ecom-pipeline:latest            # ... and call the image ecom-pipeline
+    command: standalone                    # scheduler + DAG processor + API server/UI in one container
+    depends_on:
+      postgres:
+        condition: service_healthy         # wait until Postgres is ready
+    ports:
+      - "8080:8080"                        # UI at http://localhost:8080
+    volumes:
+      - .:/opt/airflow/project             # whole repo inside the container (code, dbt, dags, key)
+    environment:
+      # --- Airflow settings (format: AIRFLOW__<SECTION>__<KEY>) ---
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/airflow/project/dags     # DAGs live in the repo
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"                     # hide Airflow's ~50 example DAGs
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"     # no login on the laptop (never in production)
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"            # look for new DAG files every 30 s
+      # --- Our pipeline ---
+      GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/project/keys/pipeline-sa.json
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}   # secret, read from the git-ignored .env file (empty = logs only)
+    restart: unless-stopped
+
+volumes:
+  postgres-db:

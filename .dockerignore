@@ -1,0 +1,12 @@
+# Never send these to the Docker build (secrets, big or generated folders)
+keys/
+.env
+venv/
+.git/
+.idea/
+data/
+__pycache__/
+.pytest_cache/
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

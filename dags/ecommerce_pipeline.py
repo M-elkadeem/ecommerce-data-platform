@@ -1,7 +1,7 @@
 """E-commerce marketing pipeline: ingest ONE day of raw data -> check freshness -> dbt build.
 
-Round 4 version: daily schedule over the data period, each run loads its own day ({{ ds }}),
-automatic retries for temporary errors, backfills for past days.
+Daily schedule over the data period, each run loads its own day ({{ ds }}),
+automatic retries for temporary errors, backfills for past days, alerts on final failure.
 """
 
 from datetime import timedelta
@@ -11,6 +11,8 @@ import pendulum
 from airflow.providers.standard.operators.bash import BashOperator
 # noinspection PyUnresolvedReferences
 from airflow.sdk import DAG
+# noinspection PyUnresolvedReferences
+from alerts import notify_failure          # our failure callback (dags/alerts.py)
 
 # --- Paths inside the container (docker-compose.yml mounts the repo here) ---
 REPO_DIR = "/opt/airflow/project"
@@ -36,6 +38,7 @@ default_args = {
     "retry_exponential_backoff": True,           # ... then longer each time (1, 2, 4 ... min)
     "max_retry_delay": timedelta(minutes=10),    # never wait more than 10 min
     "execution_timeout": timedelta(minutes=30),  # kill a task that hangs
+    "on_failure_callback": notify_failure,       # alert when a task fails for good (after retries)
 }
 
 with DAG(

@@ -39,6 +39,7 @@ services:
       AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"            # look for new DAG files every 30 s
       # --- Our pipeline ---
       GOOGLE_APPLICATION_CREDENTIALS: /opt/airflow/project/keys/pipeline-sa.json
+      ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-}   # secret, read from the git-ignored .env file (empty = logs only)
     restart: unless-stopped
 
 volumes:

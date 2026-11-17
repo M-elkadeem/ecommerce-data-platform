@@ -82,8 +82,8 @@ with DAG(
 
     # ---------- 2. Transformation (dbt) ----------
     dbt_deps = BashOperator(
-        task_id="dbt_deps",
-        bash_command=f"{DBT} deps",
+        task_id="dbt_deps",                                 # install dbt_utils only if it's missing
+        bash_command=f"[ -d dbt_packages/dbt_utils ] || {DBT} deps",   # (re-installing every run can clash between runs)
         cwd=DBT_DIR,
     )
 
